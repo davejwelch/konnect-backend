@@ -9,7 +9,8 @@ app.use(bodyParser.json());
 let lastUserHashes = [];
 
 app.get('/ping', (req, res) => {
-  res.send('pong');
+  console.log('/ping called');
+  res.json({ message: 'pong' });
 });
 
 app.post('/match', (req, res) => {
