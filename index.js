@@ -22,24 +22,30 @@ app.post('/session/:code', (req, res) => {
   }
 
   if (!sessions[code]) {
-    // First user to join this session
     sessions[code] = {
       user1: hashes,
       user1Revealed: false,
       user2Revealed: false,
     };
+
+    // Auto-delete after 30 minutes
+    setTimeout(() => {
+      delete sessions[code];
+      console.log(`Session ${code} deleted after 30 minutes`);
+    }, 30 * 60 * 1000);
+
     return res.json({ waiting: true });
-  } else if (!sessions[code].user2) {
-    // Second user joins
+  }
+
+  if (!sessions[code].user2) {
     sessions[code].user2 = hashes;
     const user1 = sessions[code].user1;
     const matches = hashes.filter(h => user1.includes(h));
     sessions[code].matches = matches;
     return res.json({ matches });
-  } else {
-    // Session already full
-    return res.status(400).json({ error: 'Session full or expired' });
   }
+
+  return res.status(400).json({ error: 'This code has already been used by two people. Please try a new one.' });
 });
 
 app.post('/session/:code/reveal', (req, res) => {
@@ -55,7 +61,7 @@ app.post('/session/:code/reveal', (req, res) => {
     return res.status(400).json({ error: 'Both users must join first' });
   }
 
-  // Simulate per-client reveal toggle — in production you'd use auth/session
+  // Track number of reveal requests
   if (!session.revealRequestCount) session.revealRequestCount = 1;
   else session.revealRequestCount++;
 
@@ -63,7 +69,7 @@ app.post('/session/:code/reveal', (req, res) => {
     return res.json({ waiting: true });
   }
 
-  return res.json({ ok: true }); // Frontend will start polling
+  return res.json({ ok: true }); // Frontend will begin polling
 });
 
 app.get('/session/:code/reveal-status', (req, res) => {
