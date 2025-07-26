@@ -82,7 +82,8 @@ app.get('/session/:code/reveal-status', (req, res) => {
 
   const session = sessions[code];
 
-  if (session.revealRequestCount === 2 && Array.isArray(session.matches)) {
+  // ✅ Always return matches if they exist
+  if (Array.isArray(session.matches)) {
     return res.json({ mutualHashes: session.matches });
   } else {
     return res.json({ waiting: true });
