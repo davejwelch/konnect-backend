@@ -21,6 +21,8 @@ app.post('/session/:code', (req, res) => {
     return res.status(400).json({ error: 'hashes must be an array' });
   }
 
+  console.log(`Received ${hashes.length} hashes for code ${code}`);
+
   if (!sessions[code]) {
     sessions[code] = {
       user1: hashes,
@@ -45,7 +47,7 @@ app.post('/session/:code', (req, res) => {
     return res.json({ matches });
   }
 
-  return res.status(400).json({ error: 'This code has already been used by two people. Please try a new one.' });
+  return res.status(400).json({ error: 'Code already in use by two users. Please generate a new one.' });
 });
 
 app.post('/session/:code/reveal', (req, res) => {
@@ -61,7 +63,6 @@ app.post('/session/:code/reveal', (req, res) => {
     return res.status(400).json({ error: 'Both users must join first' });
   }
 
-  // Track number of reveal requests
   if (!session.revealRequestCount) session.revealRequestCount = 1;
   else session.revealRequestCount++;
 
