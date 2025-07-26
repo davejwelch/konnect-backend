@@ -13,7 +13,7 @@ app.get('/ping', (req, res) => {
   res.json({ message: 'pong' });
 });
 
-// 🚀 Invite flow: start or join by phone
+// Invite or join via phone number
 app.post('/invite/:phone', (req, res) => {
   const phone = req.params.phone;
   const { hashes } = req.body;
@@ -50,41 +50,14 @@ app.post('/invite/:phone', (req, res) => {
   return res.status(400).json({ error: 'Session already full' });
 });
 
-// ✏️ Legacy code-based flow (fallback)
-app.post('/session/:code', (req, res) => {
-  const { code } = req.params;
-  const { hashes } = req.body;
-
-  if (!Array.isArray(hashes)) {
-    return res.status(400).json({ error: 'hashes must be an array' });
-  }
-
-  if (!sessions[code]) {
-    sessions[code] = {
-      user1: hashes,
-      user1Revealed: false,
-      user2Revealed: false,
-    };
-
-    setTimeout(() => {
-      delete sessions[code];
-      console.log(`Session ${code} deleted after 30 minutes`);
-    }, 30 * 60 * 1000);
-
-    return res.json({ waiting: true });
-  }
-
-  if (!sessions[code].user2) {
-    sessions[code].user2 = hashes;
-    const matches = hashes.filter(h => sessions[code].user1.includes(h));
-    sessions[code].matches = matches;
-    return res.json({ matches });
-  }
-
-  return res.status(400).json({ error: 'Code already in use by two users. Please generate a new one.' });
+// Simulated push notification trigger (mock)
+app.post('/notify/:phone', (req, res) => {
+  const phone = req.params.phone;
+  console.log(`Mock push notification to ${phone}`);
+  res.json({ success: true });
 });
 
-// Reveal flow (shared for both code and invite sessions)
+// Reveal step (shared by invite or code flow)
 app.post('/session/:id/reveal', (req, res) => {
   const { id } = req.params;
 
@@ -108,6 +81,7 @@ app.post('/session/:id/reveal', (req, res) => {
   return res.json({ ok: true });
 });
 
+// Reveal poll
 app.get('/session/:id/reveal-status', (req, res) => {
   const { id } = req.params;
 
