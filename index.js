@@ -17,12 +17,13 @@ app.get('/ping', (req, res) => {
   res.json({ message: 'pong' });
 });
 
-// Register push token
+// Register push token with phone number
 app.post('/register-push-token', (req, res) => {
   const { phone, token } = req.body;
   if (!phone || !token) return res.status(400).json({ error: 'Missing phone or token' });
   const clean = normalizePhone(phone);
   pushTokens[clean] = token;
+  console.log(`Registered push token for ${clean}: ${token}`);
   res.json({ success: true });
 });
 
@@ -44,6 +45,8 @@ app.post('/start-session', async (req, res) => {
   setTimeout(() => delete sessions[sessionId], 30 * 60 * 1000);
 
   const targetToken = pushTokens[cleanTarget];
+  console.log(`Sending push to ${cleanTarget} with token: ${targetToken}`);
+
   if (targetToken) {
     await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
@@ -56,6 +59,8 @@ app.post('/start-session', async (req, res) => {
         data: { sessionId }
       })
     });
+  } else {
+    console.warn(`No push token found for ${cleanTarget}`);
   }
 
   res.json({ success: true, sessionId });
