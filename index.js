@@ -9,6 +9,7 @@ app.use(bodyParser.json());
 
 const sessions = {};
 const pushTokens = {}; // phone -> token
+let lastSessionId = null;
 
 const normalizePhone = (phone) => phone.replace(/\D/g, '').replace(/^1/, '').trim();
 
@@ -34,6 +35,7 @@ app.post('/start-session', async (req, res) => {
 
   const cleanTarget = normalizePhone(target);
   const sessionId = Math.random().toString(36).substring(2, 6);
+  lastSessionId = sessionId;
 
   sessions[sessionId] = {
     user1: hashes,
@@ -41,7 +43,6 @@ app.post('/start-session', async (req, res) => {
     user2Revealed: false
   };
 
-  // Expire in 30 mins
   setTimeout(() => delete sessions[sessionId], 30 * 60 * 1000);
 
   const targetToken = pushTokens[cleanTarget];
@@ -77,7 +78,7 @@ app.post('/join-session', (req, res) => {
   res.json({ matches: session.matches });
 });
 
-// Reveal logic
+// Reveal logic with path param (original)
 app.post('/session/:id/reveal', (req, res) => {
   const { id } = req.params;
   const session = sessions[id];
@@ -92,6 +93,24 @@ app.post('/session/:id/reveal', (req, res) => {
 app.get('/session/:id/reveal-status', (req, res) => {
   const { id } = req.params;
   const session = sessions[id];
+  if (!session || !session.matches) return res.status(404).json({ error: 'No match info' });
+
+  res.json({ mutualHashes: session.matches });
+});
+
+// Reveal logic fallback (for frontend expecting fixed path)
+app.post('/session/reveal', (req, res) => {
+  const session = sessions[lastSessionId];
+  if (!session || !session.user1 || !session.user2) return res.status(400).json({ error: 'Incomplete session' });
+
+  session.revealRequestCount = (session.revealRequestCount || 0) + 1;
+  if (session.revealRequestCount === 1) return res.json({ waiting: true });
+
+  res.json({ ok: true });
+});
+
+app.get('/session/reveal-status', (req, res) => {
+  const session = sessions[lastSessionId];
   if (!session || !session.matches) return res.status(404).json({ error: 'No match info' });
 
   res.json({ mutualHashes: session.matches });
